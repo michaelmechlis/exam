@@ -6,7 +6,7 @@
     "nodemon": "1.18.3",
     "body-parser": "*",
     "morgan": "1.10.0",
-    "mysql": "2.18.1"
+    "mysql2": "3.2.0"
   },
   "scripts": {
     "dev": "nodemon",

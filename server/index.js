@@ -5,7 +5,7 @@ const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const app = express();
 app.use(cors());
@@ -43,24 +43,20 @@ connection.connect((err) => {
   console.log('Connected to database as ID ' + connection.threadId);
 });
 
-const createTableQuery = `CREATE TABLE values (number INT(11) NOT NULL)`;
+const createTableSQL = `
+  CREATE TABLE fibvalues (
+    number INT(11) NOT NULL
+  )
+`;
 
-connection.query(createTableQuery, (err, results, fields) => {
+// execute the SQL statement to create the table
+connection.execute(createTableSQL, (err, results, fields) => {
   if (err) {
     console.error('Error creating table: ' + err.stack);
     return;
   }
   console.log('Table created');
 });
-
-connection.end((err) => {
-  if (err) {
-    console.error('Error closing database: ' + err.stack);
-    return;
-  }
-  console.log('Database connection closed');
-});
-
 
 // Redis Client Setup
 const redis = require('redis');
@@ -80,16 +76,13 @@ app.get('/', (req, res) => {
 app.get('/api/values/all', async (req, res) => {
   //const values = await pgClient.query('SELECT * from values');
 
-  connection.connect();
- 
-  connection.query('SELECT number FROM values', function (error, results, fields) {
+  connection.execute('SELECT number FROM fibvalues', function (error, results, fields) {
     if (error) throw error;
 
     console.log('The solution is: ', results);
     res.send(results);
   });
   
-  connection.end();
 });
 
 app.get('/api/values/current', async (req, res) => {
@@ -109,17 +102,14 @@ app.post('/api/values', async (req, res) => {
   redisPublisher.publish('insert', index);
   //pgClient.query('INSERT INTO values(number) VALUES($1)', [index]);
 
-  connection.connect();
 
-  connection.query('INSERT INTO values (number) VALUES (?)', [index], (err, results, fields) => {
+  connection.execute('INSERT INTO fibvalues (number) VALUES (?)', [index], (err, results, fields) => {
     if (err) {
       console.error('Error inserting value: ' + err.stack);
       return;
     }
     console.log('Value inserted');
   });
-
-  connection.end();
 
   res.send({ working: true });
 });
